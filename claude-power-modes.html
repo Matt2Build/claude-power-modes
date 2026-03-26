@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Power Modes</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;700&display=swap');
+
+:root {
+  --bg: #0a0a0f;
+  --border: #1e1e2e;
+  --accent: #e8ff47;
+  --accent2: #47e8ff;
+  --accent3: #ff4787;
+  --text: #e8e8f0;
+  --muted: #555570;
+  --card: #13131e;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'IBM Plex Sans', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 48px;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+h1 {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: clamp(28px, 5vw, 48px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+h1 span { color: var(--accent); }
+
+.subtitle {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.badge {
+  background: var(--accent);
+  color: #000;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  align-self: flex-start;
+  margin-top: 6px;
+}
+
+.modes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2px;
+  margin-bottom: 40px;
+}
+
+.mode-card {
+  background: var(--card);
+  padding: 24px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.mode-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 3px; height: 100%;
+  background: var(--c, var(--accent));
+  transform: scaleY(0);
+  transition: transform 0.15s ease;
+  transform-origin: top;
+}
+
+.mode-card:hover::before,
+.mode-card.active::before { transform: scaleY(1); }
+
+.mode-card:hover,
+.mode-card.active {
+  background: #16161f;
+  border-color: var(--c, var(--accent));
+}
+
+.mode-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.15em;
+  margin-bottom: 10px;
+}
+
+.mode-icon { font-size: 22px; margin-bottom: 8px; }
+
+.mode-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.mode-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+.workspace {
+  display: none;
+  border: 2px solid var(--border);
+  background: var(--card);
+}
+
+.workspace.visible { display: block; }
+
+.ws-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 2px solid var(--border);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ws-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ws-body { padding: 20px; }
+
+.label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+
+textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  padding: 14px;
+  resize: vertical;
+  min-height: 130px;
+  outline: none;
+  line-height: 1.6;
+  transition: border-color 0.15s;
+}
+
+textarea:focus { border-color: var(--accent); }
+textarea::placeholder { color: var(--muted); }
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 10px 18px;
+  border: 2px solid;
+  cursor: pointer;
+  transition: all 0.12s;
+  text-transform: uppercase;
+  background: transparent;
+}
+
+.btn-run { color: #000; background: var(--accent); border-color: var(--accent); }
+.btn-run:hover { background: transparent; color: var(--accent); }
+.btn-run:disabled { opacity: 0.4; cursor: not-allowed; background: var(--accent); color: #000; }
+
+.btn-ghost { color: var(--muted); border-color: var(--border); }
+.btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+
+.btn-copy { color: var(--accent2); border-color: var(--accent2); }
+.btn-copy:hover { background: var(--accent2); color: #000; }
+
+.btn-send { color: var(--accent); border-color: var(--accent); }
+.btn-send:hover { background: var(--accent); color: #000; }
+
+.output-section { margin-top: 20px; display: none; }
+
+.output-box {
+  background: var(--bg);
+  border: 2px solid var(--border);
+  padding: 18px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  line-height: 1.75;
+  min-height: 180px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.cursor {
+  display: inline-block;
+  width: 8px; height: 14px;
+  background: var(--accent);
+  animation: blink 1s step-end infinite;
+  vertical-align: middle;
+}
+
+@keyframes blink { 50% { opacity: 0; } }
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border-top: 2px solid var(--border);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+.dot.live { background: var(--accent); animation: pulse 1.5s ease infinite; }
+
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+.err {
+  color: var(--accent3);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--accent3);
+}
+
+.sh { color: var(--accent); font-weight: 700; display: block; margin-top: 12px; }
+.sh2 { color: #aaa; font-weight: 700; display: block; margin-top: 10px; }
+
+@media (max-width: 600px) {
+  .modes-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div>
+      <h1>CLAUDE <span>POWER</span><br>MODES</h1>
+      <p class="subtitle">// 7 meta-prompts · AI-powered · instant execution</p>
+    </div>
+    <div class="badge">CLAUDE SONNET 4</div>
+  </header>
+
+  <div class="modes-grid" id="grid"></div>
+
+  <div class="workspace" id="ws">
+    <div class="ws-header">
+      <div class="ws-title" id="wsTitle">MODE ACTIVE <span style="color:var(--muted);font-weight:400">// ready</span></div>
+      <button class="btn btn-ghost" onclick="closeWs()">X CLOSE</button>
+    </div>
+    <div class="ws-body">
+      <div class="label">YOUR INPUT</div>
+      <textarea id="input" placeholder="Paste your content here..."></textarea>
+      <div class="actions">
+        <button class="btn btn-run" id="runBtn" onclick="runMode()">RUN MODE</button>
+        <button class="btn btn-ghost" onclick="clearOut()">CLEAR</button>
+      </div>
+      <div class="output-section" id="outSection">
+        <div class="label" style="margin-top:4px">OUTPUT</div>
+        <div class="output-box" id="outBox"></div>
+        <div class="actions">
+          <button class="btn btn-copy" onclick="copyOut()">COPY OUTPUT</button>
+          <button class="btn btn-send" onclick="sendToClaude()">SEND TO CLAUDE</button>
+        </div>
+      </div>
+      <div id="errMsg"></div>
+    </div>
+    <div class="status-bar">
+      <div class="dot" id="dot"></div>
+      <span id="statusTxt">IDLE</span>
+    </div>
+  </div>
+
+</div>
+<script>
+var MODES = [
+  {
+    num:"01", icon:"🔍", title:"AUDIT YOUR PROJECT", color:"#e8ff47",
+    desc:"Full architectural audit — security risks, technical debt, performance issues, prioritized action plan.",
+    placeholder:"Paste your project files, folder structure, package.json, key code files...",
+    system:"Act as a senior software architect who audits entire project folders and delivers a prioritized action plan.\n\nRules:\n- Every finding must include a specific fix, not just a warning\n- Prioritized by impact, not ease of fixing\n- Security vulnerabilities flagged separately as highest priority\n- Action plan must be executable, not theoretical\n\nStructure your response exactly as:\n\n## SECURITY VULNERABILITIES\n[Issue > Risk Level > Specific Fix]\n\n## ARCHITECTURE ISSUES\n[Issue > Impact > Specific Fix]\n\n## TECHNICAL DEBT\n[Issue > Urgency > Specific Fix]\n\n## PERFORMANCE BOTTLENECKS\n[Issue > Impact > Specific Fix]\n\n## PRIORITIZED ACTION PLAN\n[Numbered, highest impact first, each item executable]"
+  },
+  {
+    num:"02", icon:"🧠", title:"PROJECT MEMORY", color:"#47e8ff",
+    desc:"Store your full project context. Never repeat yourself — Claude retains and references everything automatically.",
+    placeholder:"Paste your full project context — tech stack, decisions, goals, constraints, current state...",
+    system:"Act as a project context manager who retains everything about a project so the user never has to repeat themselves.\n\nRules:\n- Never ask for context already provided\n- Conflicts between new and stored context must be flagged immediately\n- Summary must be specific, not vague\n- Context applied proactively in every response\n\nStructure your response exactly as:\n\n## CONTEXT SUMMARY\n[2-3 sentence high-level summary]\n\n## KEY COMPONENTS RETAINED\n[Every component, tech stack item, constraint, and goal]\n\n## DECISION LOG\n[Architectural or product decisions found in the context]\n\n## CONFLICT FLAG PROTOCOL\n[Any internal contradictions, or 'No conflicts detected']\n\n## HOW TO USE ME NOW\n[What the user can ask next without re-providing context]"
+  },
+  {
+    num:"03", icon:"⚡", title:"PARALLEL TASKS", color:"#ff9547",
+    desc:"Run multiple work streams simultaneously. Dependencies flagged, results merged into one coherent output.",
+    placeholder:"List all your tasks, one per line. Include any context needed for each task...",
+    system:"Act as a parallel task coordinator who assigns, runs, and merges multiple work streams simultaneously.\n\nRules:\n- No task waits for another unless there is a real dependency\n- Dependencies must be identified before starting\n- Progress reports must be specific\n- Merged output must feel unified, not stitched\n\nStructure your response exactly as:\n\n## TASK ASSIGNMENT\n[Task ID > Agent Role > Scope > Dependencies]\n\n## DEPENDENCY MAP\n[Which tasks depend on others, or 'All tasks are independent']\n\n## PARALLEL EXECUTION RESULTS\n[Full result for each task under its own subheader]\n\n## MERGED FINAL OUTPUT\n[Unified synthesis of all task results]"
+  },
+  {
+    num:"04", icon:"🎯", title:"SOLVE COMPLEX PROBLEMS", color:"#a847ff",
+    desc:"Calibrated depth analysis — assumptions challenged, missing info flagged, solved at the right depth.",
+    placeholder:"Describe your complex problem in full. Include what you've tried, your current theory, and constraints...",
+    system:"Act as an adaptive problem solver who calibrates thinking depth before answering.\n\nRules:\n- Never answer immediately — assess before solving\n- Missing information must be flagged before any solution\n- Assumptions challenged directly, not diplomatically avoided\n- Depth assessment stated explicitly before solving\n\nStructure your response exactly as:\n\n## DEPTH ASSESSMENT\n[QUICK / MEDIUM / DEEP — and why]\n\n## MISSING INFORMATION\n[Every absent piece needed for an optimal solution, or 'Proceeding with available information']\n\n## CHALLENGED ASSUMPTIONS\n[Every assumption worth challenging and why]\n\n## SOLUTION\n[Solve at the assessed depth — specific and actionable]\n\n## NEXT STEPS\n[Concrete next actions]"
+  },
+  {
+    num:"05", icon:"🔎", title:"FIND EVERY MISTAKE", color:"#ff4787",
+    desc:"Critical audit of your work — every error, wrong assumption, blind spot, and unconsidered risk surfaced.",
+    placeholder:"Paste your work, plan, code, decision, or reasoning. Include any assumptions you're making...",
+    system:"Act as a critical thinking auditor who reviews work and challenges every assumption, error, and blind spot.\n\nRules:\n- Challenge thinking directly, no diplomatic softening\n- Every error paired with a specific correction\n- Overconfidence flagged explicitly, not implied\n- Review happens before committing to any next step\n\nStructure your response exactly as:\n\n## LOGICAL ERRORS\n[Error > Why it's wrong > Specific correction]\n\n## WRONG ASSUMPTIONS\n[Assumption > Why it's risky > What to verify instead]\n\n## OVERCONFIDENCE FLAGS\n[Overconfident claim > What's actually uncertain > Evidence needed]\n\n## UNCONSIDERED RISKS\n[Risk > Likelihood > Mitigation]\n\n## RECOMMENDED NEXT STEP\n[One clear action before moving forward]"
+  },
+  {
+    num:"06", icon:"📚", title:"NEVER LOSE CONTEXT", color:"#47ffb2",
+    desc:"Month-long project tracking — decisions logged, requirement changes timestamped, failed attempts recorded.",
+    placeholder:"Describe your full project — decisions made, what you've tried, requirement changes, current state...",
+    system:"Act as a long-term project assistant who tracks every decision, requirement change, and attempted solution.\n\nRules:\n- Past decisions referenced automatically, never ask twice\n- Requirement changes logged with reason for the change\n- Failed attempts recorded, never suggest something already tried\n- Context compacted regularly\n\nStructure your response exactly as:\n\n## DECISION LOG\n[Decision > Rationale > Date/Context]\n\n## REQUIREMENT CHANGE TRACKER\n[Original > New > Reason > When]\n\n## ATTEMPTED SOLUTIONS\n[Solution tried > Outcome > Why it failed]\n\n## ACTIVE CONTEXT SUMMARY\n[Compact summary of full project state]\n\n## READY STATE\n[What you're tracking and what the user can ask next]"
+  },
+  {
+    num:"07", icon:"🔗", title:"CONNECT CODEBASES", color:"#ff47e8",
+    desc:"Full integration strategy between two codebases — APIs mapped, data structures defined, rollback included.",
+    placeholder:"Paste both codebases or key files, READMEs, package.json, API routes, data models. Describe the integration goal...",
+    system:"Act as a systems integration architect who maps full integration strategies between two separate codebases.\n\nRules:\n- Breaking changes must be flagged before the integration plan\n- API endpoints must be specific, not vague\n- Migration strategy must include a rollback option\n- Shared data structures defined precisely, no ambiguity\n\nStructure your response exactly as:\n\n## INTEGRATION MAP\n[How the two systems connect — data flows, touch points, system boundaries]\n\n## API ENDPOINTS TO CREATE\n[Method + Path > Request body > Response shape > Codebase owner > Breaking change risk]\n\n## SHARED DATA STRUCTURES\n[Each shared type with field names, types, and validation rules]\n\n## MIGRATION STRATEGY\n[Phase > What changes > How to verify > Risk]\n\n## ROLLBACK PLAN\n[Explicit rollback procedure for each phase]\n\n## BREAKING CHANGES\n[What breaks > Who's affected > Mitigation]"
+  }
+];
+
+var active = null;
+var running = false;
+
+function init() {
+  var grid = document.getElementById('grid');
+  for (var i = 0; i < MODES.length; i++) {
+    var m = MODES[i];
+    var card = document.createElement('div');
+    card.className = 'mode-card';
+    card.style.cssText = '--c:' + m.color;
+    card.setAttribute('data-i', i);
+    card.innerHTML =
+      '<div class="mode-num">' + m.num + '</div>' +
+      '<div class="mode-icon">' + m.icon + '</div>' +
+      '<div class="mode-title">' + m.title + '</div>' +
+      '<div class="mode-desc">' + m.desc + '</div>';
+    card.onclick = (function(idx){ return function(){ pick(idx); }; })(i);
+    grid.appendChild(card);
+  }
+}
+
+function pick(i) {
+  active = i;
+  var m = MODES[i];
+  var cards = document.querySelectorAll('.mode-card');
+  for (var j = 0; j < cards.length; j++) cards[j].classList.remove('active');
+  cards[i].classList.add('active');
+  document.getElementById('wsTitle').innerHTML =
+    '<span style="color:' + m.color + '">' + m.icon + ' ' + m.title + '</span>' +
+    '&nbsp;<span style="color:var(--muted);font-weight:400">// mode active</span>';
+  document.getElementById('input').placeholder = m.placeholder;
+  var ws = document.getElementById('ws');
+  ws.classList.add('visible');
+  clearOut();
+  setStatus('READY', false);
+  ws.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function closeWs() {
+  document.getElementById('ws').classList.remove('visible');
+  var cards = document.querySelectorAll('.mode-card');
+  for (var j = 0; j < cards.length; j++) cards[j].classList.remove('active');
+  active = null;
+}
+
+function clearOut() {
+  document.getElementById('outSection').style.display = 'none';
+  document.getElementById('outBox').innerHTML = '';
+  document.getElementById('errMsg').innerHTML = '';
+}
+
+function setStatus(txt, live) {
+  document.getElementById('statusTxt').textContent = txt;
+  document.getElementById('dot').className = live ? 'dot live' : 'dot';
+}
+
+function runMode() {
+  if (active === null || running) return;
+  var input = document.getElementById('input').value.trim();
+  if (!input) {
+    document.getElementById('errMsg').innerHTML = '<div class="err">Please provide input before running.</div>';
+    return;
+  }
+  var m = MODES[active];
+  running = true;
+  var btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.textContent = 'RUNNING...';
+  document.getElementById('errMsg').innerHTML = '';
+  document.getElementById('outSection').style.display = 'block';
+  var box = document.getElementById('outBox');
+  box.innerHTML = '<span class="cursor"></span>';
+  setStatus('PROCESSING', true);
+
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: m.system,
+      messages: [{ role: 'user', content: input }]
+    })
+  })
+  .then(function(res) {
+    if (!res.ok) throw new Error('API error ' + res.status);
+    return res.json();
+  })
+  .then(function(data) {
+    var txt = (data.content || []).map(function(b){ return b.text || ''; }).join('');
+    box.innerHTML = fmt(txt);
+    setStatus('COMPLETE', false);
+  })
+  .catch(function(e) {
+    box.innerHTML = '';
+    document.getElementById('errMsg').innerHTML = '<div class="err">' + e.message + '</div>';
+    setStatus('ERROR', false);
+  })
+  .finally(function() {
+    running = false;
+    btn.disabled = false;
+    btn.textContent = 'RUN MODE';
+  });
+}
+
+function fmt(t) {
+  return t
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^## (.+)$/gm,'<span class="sh">$1</span>')
+    .replace(/^### (.+)$/gm,'<span class="sh2">$1</span>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong style="color:#e8e8f0">$1</strong>')
+    .replace(/`(.+?)`/g,'<code style="color:#47e8ff;background:rgba(71,232,255,0.08);padding:1px 4px">$1</code>')
+    .replace(/\n/g,'<br>');
+}
+
+function copyOut() {
+  var text = document.getElementById('outBox').innerText;
+  navigator.clipboard.writeText(text).then(function() {
+    var b = document.querySelector('.btn-copy');
+    b.textContent = 'COPIED!';
+    setTimeout(function(){ b.textContent = 'COPY OUTPUT'; }, 2000);
+  });
+}
+
+function sendToClaude() {
+  if (active === null) return;
+  var m = MODES[active];
+  var input = document.getElementById('input').value.trim();
+  var output = document.getElementById('outBox').innerText.trim();
+  var payload = 'CLAUDE POWER MODE: ' + m.title + '\n\n' +
+    'SYSTEM ROLE:\n' + m.system + '\n\n' +
+    'MY INPUT:\n' + (input || '[No input provided]') + '\n\n' +
+    (output ? 'PREVIOUS OUTPUT:\n' + output + '\n\n' : '') +
+    '---\nPlease continue in this mode. Apply the role and rules above.';
+  navigator.clipboard.writeText(payload).then(function() {
+    var b = document.querySelector('.btn-send');
+    b.textContent = 'COPIED — PASTE INTO CLAUDE';
+    setTimeout(function(){ b.textContent = 'SEND TO CLAUDE'; }, 3000);
+  });
+}
+
+init();
+</script>
+</body>
+</html>
